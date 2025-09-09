@@ -1,0 +1,8 @@
+requests>=2.32.5
+beautifulsoup4>=4.13.4
+sentence-transformers>=5.1.0
+numpy>=2.3.2
+crawl4ai>=0.2.0
+openai>=1.0.0
+python-dotenv>=1.0.0
+sqlite-vss>=0.1.2
