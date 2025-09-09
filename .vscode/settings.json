@@ -2,6 +2,5 @@
     "python.pythonPath": "/opt/miniconda3/envs/irsdk-chat/bin/python",
     "python.defaultInterpreterPath": "/opt/miniconda3/envs/irsdk-chat/bin/python",
     "python.terminal.activateEnvironment": true,
-    "python.terminal.activateEnvInCurrentTerminal": true,
-    "python.languageServer": "None"
+    "python.terminal.activateEnvInCurrentTerminal": true
 }

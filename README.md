@@ -1,6 +1,6 @@
-c# iRacing Forum Query System
+# iRacing Forum Query System
 
-A simple system to query your scraped iRacing forum posts using embeddings and OpenAI's GPT models.
+A simple system to scrape iRacing forums, store posts with embeddings, and query them using AI.
 
 ## Features
 
@@ -29,6 +29,20 @@ A simple system to query your scraped iRacing forum posts using embeddings and O
    ```
 
 ## Usage
+
+### Running the Scraper
+
+To scrape the forums and build the database:
+
+- For main forums:
+  ```bash
+  python scraper.py
+  ```
+
+- For JForum sections:
+  ```bash
+  python scraper.py jforum
+  ```
 
 ### Interactive CLI
 
@@ -64,12 +78,6 @@ post = query_system.get_post_by_id(123)
 
 # Don't forget to close the connection
 query_system.close()
-```
-
-### Run Examples
-
-```bash
-python example_usage.py
 ```
 
 ## How It Works
@@ -121,7 +129,9 @@ You can provide your OpenAI API key in four ways:
 
 ## Files
 
-- `query_system.py` - Main query system and CLI
-- `example_usage.py` - Example usage script
-- `scraper.py` - Original scraper (creates the database)
+- `scraper.py` - Entry point for forum scraping (wrapper for main and JForum scrapers)
+- `main_forum_scraper.py` - Scraper for main iRacing forums
+- `jforum_scraper.py` - Scraper for JForum sections
+- `db_utils.py` - Database utility functions for setup and saving posts
+- `query_system.py` - Main query system and CLI interface
 - `requirements.txt` - Python dependencies
