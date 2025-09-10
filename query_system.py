@@ -1,18 +1,14 @@
-import sqlite3
-import json
 import numpy as np
 from sentence_transformers import SentenceTransformer
-import sqlite_vss
 from openai import OpenAI
 import os
 from typing import List, Dict, Any
 from dotenv import load_dotenv
-
-# Set tokenizers parallelism to avoid warnings
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
+from milvus import DB_PATH, COLLECTION_NAME, model, dim
+from pymilvus import MilvusClient
 
 class ForumQuerySystem:
-    def __init__(self, db_path: str = "iracing_forum.db", openai_api_key: str = None):
+    def __init__(self, db_path: str = DB_PATH, openai_api_key: str = None):
         """
         Initialize the forum query system with database and OpenAI client.
         
@@ -36,20 +32,9 @@ class ForumQuerySystem:
                 raise ValueError("OpenAI API key not provided. Set OPENAI_API_KEY in .env file, environment variable, or pass it directly.")
             self.openai_client = OpenAI(api_key=api_key)
         
-        # Setup database connection
-        self.conn = sqlite3.connect(db_path)
-        self.conn.enable_load_extension(True)
+        # Setup Milvus connection
+        self.client = MilvusClient(db_path)
         
-        # Try to load VSS extension
-        try:
-            sqlite_vss.load(self.conn)
-            self.vss_available = True
-        except Exception as e:
-            print(f"VSS extension not available: {e}")
-            self.vss_available = False
-        
-        self.cur = self.conn.cursor()
-    
     def search_similar_posts(self, query: str, limit: int = 10) -> List[Dict[str, Any]]:
         """
         Search for posts similar to the query using embeddings.
@@ -62,102 +47,29 @@ class ForumQuerySystem:
             List of dictionaries containing post metadata and similarity scores
         """
         # Generate embedding for the query
-        query_embedding = self.model.encode(query).astype(np.float32)
+        query_embedding = model.encode(query).astype(np.float32).tolist()
         
-        # Try VSS search first if available, fallback to manual similarity
-        if self.vss_available:
-            try:
-                # Convert query embedding to bytes for VSS
-                query_embedding_bytes = query_embedding.tobytes()
-                
-                # VSS search
-                self.cur.execute("""
-                SELECT 
-                    m.id, m.source, m.author, m.date, m.text, m.comment_id,
-                    vss_distance_l2(embedding, ?) as distance
-                FROM forum_posts_meta m
-                JOIN forum_posts_embeddings e ON m.id = e.rowid
-                ORDER BY distance
-                LIMIT ?
-                """, (query_embedding_bytes, limit))
-                
-                results = self.cur.fetchall()
-                
-                # Convert to list of dictionaries
-                posts = []
-                for row in results:
-                    posts.append({
-                        'id': row[0],
-                        'source': row[1],
-                        'author': row[2],
-                        'date': self._clean_date(row[3]),
-                        'text': row[4],
-                        'comment_id': row[5],
-                        'similarity_score': 1 - row[6]  # Convert distance to similarity
-                    })
-                
-                return posts
-                
-            except (sqlite3.OperationalError, sqlite3.ProgrammingError) as e:
-                print(f"VSS search failed, falling back to manual similarity: {e}")
-                return self._manual_similarity_search(query, limit)
-        else:
-            # VSS not available, use manual similarity
-            return self._manual_similarity_search(query, limit)
-    
-    def _manual_similarity_search(self, query: str, limit: int = 10) -> List[Dict[str, Any]]:
-        """
-        Fallback method for similarity search when VSS is not available.
-        """
-        print("Warn: Manual similarity search")
-        # Generate query embedding
-        query_embedding = self.model.encode(query).astype(np.float32)
+        res = self.client.search(
+            collection_name=COLLECTION_NAME,
+            data=[query_embedding],
+            limit=limit,
+            output_fields=["source", "author", "date", "text", "comment_id"]
+        )
         
-        # Get all posts with their embeddings
-        self.cur.execute("""
-        SELECT m.id, m.source, m.author, m.date, m.text, m.comment_id, e.embedding
-        FROM forum_posts_meta m
-        JOIN forum_posts_embeddings e ON m.id = e.id
-        """)
+        posts = []
+        for hit in res[0]:
+            entity = hit["entity"]
+            posts.append({
+                'id': hit['id'],
+                'source': entity.get('source'),
+                'author': entity.get('author'),
+                'date': self._clean_date(entity.get('date')),
+                'text': entity.get('text'),
+                'comment_id': entity.get('comment_id'),
+                'similarity_score': 1 - hit['distance']  # Assuming COSINE metric where distance = 1 - similarity
+            })
         
-        all_posts = self.cur.fetchall()
-        
-        # Calculate similarities
-        similarities = []
-        for row in all_posts:
-            post_id, source, author, date, text, comment_id, embedding_data = row
-            
-            # Parse embedding (could be JSON or bytes)
-            try:
-                if isinstance(embedding_data, bytes):
-                    # Try to parse as bytes first
-                    post_embedding = np.frombuffer(embedding_data, dtype=np.float32)
-                else:
-                    # Parse as JSON
-                    post_embedding = np.array(json.loads(embedding_data), dtype=np.float32)
-                
-                # Calculate cosine similarity
-                similarity = np.dot(query_embedding, post_embedding) / (
-                    np.linalg.norm(query_embedding) * np.linalg.norm(post_embedding)
-                )
-                
-                similarities.append({
-                    'id': post_id,
-                    'source': source,
-                    'author': author,
-                    'date': self._clean_date(date),
-                    'text': text,
-                    'comment_id': comment_id,
-                    'similarity_score': float(similarity)
-                })
-                
-            except Exception as e:
-                print(f"Error processing embedding for post {post_id}: {e}")
-                continue
-        
-        # Sort by similarity and return top results
-        similarities.sort(key=lambda x: x['similarity_score'], reverse=True)
-        return similarities[:limit]
+        return posts
     
     def ask_question(self, question: str, max_context_posts: int = 5, stream: bool = False):
         """
@@ -181,7 +93,7 @@ class ForumQuerySystem:
         
         for i, post in enumerate(relevant_posts, 1):
             context += f"Post {i} (by {post['author']}, {post['date']}):\n"
-            context += f"{post['text'][:500]}{'...' if len(post['text']) > 500 else ''}\n\n"
+            context += f"{post['text']}{'...' if len(post['text']) > 500 else ''}\n\n"
         
         # Create the prompt for OpenAI
         prompt = f"""You are an AI assistant helping users find information from iRacing forum posts. 
@@ -213,21 +125,21 @@ Please provide a helpful answer based on the forum posts above. If you reference
     
     def get_post_by_id(self, post_id: int) -> Dict[str, Any]:
         """Get a specific post by its ID."""
-        self.cur.execute("""
-        SELECT id, source, author, date, text, comment_id
-        FROM forum_posts_meta
-        WHERE id = ?
-        """, (post_id,))
+        res = self.client.query(
+            collection_name=COLLECTION_NAME,
+            filter=f"id == {post_id}",
+            output_fields=["source", "author", "date", "text", "comment_id"]
+        )
         
-        row = self.cur.fetchone()
-        if row:
+        if res:
+            entity = res[0]
             return {
-                'id': row[0],
-                'source': row[1],
-                'author': row[2],
-                'date': self._clean_date(row[3]),
-                'text': row[4],
-                'comment_id': row[5]
+                'id': entity['id'],
+                'source': entity.get('source'),
+                'author': entity.get('author'),
+                'date': self._clean_date(entity.get('date')),
+                'text': entity.get('text'),
+                'comment_id': entity.get('comment_id')
             }
         return None
     
@@ -253,7 +165,7 @@ Please provide a helpful answer based on the forum posts above. If you reference
     
     def close(self):
         """Close the database connection."""
-        self.conn.close()
+        self.client.close()
 
 def main():
     """Simple CLI interface for querying the forum database."""
@@ -312,7 +224,7 @@ def main():
                     print(f"\nFound {len(posts)} relevant posts:")
                     for i, post in enumerate(posts, 1):
                         print(f"\n{i}. {post['author']} ({post['date']}) - Score: {post['similarity_score']:.3f}")
-                        print(f"   {post['text'][:200]}{'...' if len(post['text']) > 200 else ''}")
+                        print(f"   {post['text']}")
                 else:
                     print("No relevant posts found.")
                 print()

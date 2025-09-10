@@ -1,7 +1,6 @@
 import asyncio
-import re
 from crawl4ai import *
-from db_utils import setup_database, save_post_with_embedding
+from milvus import setup_database, save_post_with_embedding
 
 def hybrid_extract_jforum_posts(html_content):
     """
@@ -103,7 +102,7 @@ async def scrape_jforum():
     )
 
     # Setup database (will append to existing data)
-    conn, cur = setup_database()
+    client = setup_database()
     
     total_posts = 0
     total_saved = 0
@@ -122,14 +121,11 @@ async def scrape_jforum():
                 page_saved = 0
                 for post in posts_data:
                     if post.get('comment_text'):  # Only save posts with content
-                        save_post_with_embedding(cur, post, source="members.iracing.com")
+                        save_post_with_embedding(client, post, source="members.iracing.com")
                         page_saved += 1
                 
                 total_saved += page_saved
                 print(f"  → Saved {page_saved} posts from offset {offset}")
-                
-                # Commit after each page to avoid losing data
-                conn.commit()
                 
                 # Add a small delay to be respectful to the server
                 await asyncio.sleep(1)
@@ -144,8 +140,6 @@ async def scrape_jforum():
     print(f"Total posts saved: {total_saved}")
     print(f"Pages processed: 151")
     
-    # Close database connection
-    conn.close()
 
 if __name__ == "__main__":
     asyncio.run(scrape_jforum())

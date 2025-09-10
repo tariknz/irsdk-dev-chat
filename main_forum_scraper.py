@@ -1,6 +1,7 @@
 import asyncio
+import json
 from crawl4ai import *
-from db_utils import setup_database, save_post_with_embedding
+from milvus import setup_database, save_post_with_embedding
 
 async def scrape_forum_page(crawler, page_num, extraction_strategy):
     """Scrape a single forum page and return the extracted data"""
@@ -72,7 +73,7 @@ async def main():
     )
 
     # Setup database once
-    conn, cur = setup_database()
+    client = setup_database()
     
     total_posts = 0
     total_saved = 0
@@ -89,14 +90,11 @@ async def main():
                 page_saved = 0
                 for post in posts_data:
                     if post.get('comment_text'):  # Only save posts with content
-                        save_post_with_embedding(cur, post)
+                        save_post_with_embedding(client, post)
                         page_saved += 1
                 
                 total_saved += page_saved
                 print(f"  → Saved {page_saved} posts from page {page_num}")
-                
-                # Commit after each page to avoid losing data
-                conn.commit()
                 
                 # Add a small delay to be respectful to the server
                 await asyncio.sleep(1)
@@ -111,8 +109,7 @@ async def main():
     print(f"Total posts saved: {total_saved}")
     print(f"Pages processed: 64")
     
-    # Close database connection
-    conn.close()
+    # No need to close Milvus client explicitly
 
 if __name__ == "__main__":
     asyncio.run(main())
