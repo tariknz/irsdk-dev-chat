@@ -5,9 +5,9 @@ A simple system to scrape iRacing forums, store posts with embeddings, and query
 ## Features
 
 - **Semantic Search**: Find relevant forum posts using sentence embeddings
-- **AI-Powered Q&A**: Ask questions and get answers based on forum content
+- **AI-Powered Q&amp;A**: Ask questions and get answers based on forum content
 - **Interactive CLI**: Easy-to-use command-line interface
-- **Vector Search**: Uses SQLite VSS extension for fast similarity search
+- **Vector Search**: Uses Milvus for fast similarity search
 
 ## Setup
 
@@ -83,16 +83,20 @@ query_system.close()
 ## How It Works
 
 1. **Embeddings**: Each forum post is converted to a vector embedding using the `all-MiniLM-L6-v2` model
-2. **Similarity Search**: When you search or ask a question, the system finds the most similar posts using cosine similarity
+2. **Similarity Search**: When you search or ask a question, the system finds the most similar posts using Milvus vector search with cosine similarity
 3. **Context Building**: Relevant posts are used as context for the OpenAI model
-4. **AI Response**: GPT-3.5-turbo generates answers based on the forum content
+4. **AI Response**: GPT-5 generates answers based on the forum content
 
 ## Database Structure
 
-The system expects a SQLite database with these tables:
-
-- `forum_posts_meta`: Contains post metadata (author, date, text, etc.)
-- `forum_posts_embeddings`: Contains vector embeddings for each post
+The system uses a Milvus vector database with a collection named &#39;forum_posts&#39; containing fields like:
+- id (auto-generated)
+- vector (embedding)
+- source
+- author
+- date
+- text
+- comment_id
 
 ## API Key Options
 
@@ -118,20 +122,11 @@ You can provide your OpenAI API key in four ways:
    query_system = ForumQuerySystem(openai_api_key="your-key")
    ```
 
-## Troubleshooting
-
-- **VSS Extension**: If SQLite VSS extension is not available, the system will fall back to manual similarity calculation
-  - Make sure you have `sqlite-vss>=0.1.2` installed: `pip install sqlite-vss`
-  - The system uses `vss_distance_l2` function for vector similarity search
-  - If you get "no such function: vss_distance" error, ensure you're using the correct conda environment
-- **API Limits**: Be mindful of OpenAI API usage and costs
-- **Database**: Make sure your database file exists and contains the expected tables
-
 ## Files
 
 - `scraper.py` - Entry point for forum scraping (wrapper for main and JForum scrapers)
 - `main_forum_scraper.py` - Scraper for main iRacing forums
 - `jforum_scraper.py` - Scraper for JForum sections
-- `db_utils.py` - Database utility functions for setup and saving posts
+- `milvus.py` - Milvus utility functions for setup and saving posts
 - `query_system.py` - Main query system and CLI interface
 - `requirements.txt` - Python dependencies

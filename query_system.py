@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 from milvus import DB_PATH, COLLECTION_NAME, model, dim
 from pymilvus import MilvusClient
 
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 class ForumQuerySystem:
     def __init__(self, db_path: str = DB_PATH, openai_api_key: str = None):
         """
