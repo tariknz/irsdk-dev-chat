@@ -2,6 +2,10 @@
 
 A simple system to scrape iRacing forums, store posts with embeddings, and query them using AI.
 
+Demo:
+
+![Demo](./demo.gif)
+
 ## Features
 
 - **Semantic Search**: Find relevant forum posts using sentence embeddings
