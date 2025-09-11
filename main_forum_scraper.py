@@ -3,6 +3,8 @@ import json
 from crawl4ai import *
 from milvus import setup_database, save_post_with_embedding
 
+import os
+
 async def scrape_forum_page(crawler, page_num, extraction_strategy):
     """Scrape a single forum page and return the extracted data"""
     url = f"https://forums.iracing.com/discussion/62/iracing-sdk/p{page_num}"
@@ -69,7 +71,7 @@ async def main():
         verbose=False,              # Less verbose for multiple pages
         use_managed_browser=True,  # Enables persistent browser strategy
         browser_type="chromium",
-        user_data_dir="/Users/tarik/irsdk-chat/chromium-profile"
+        user_data_dir=os.path.join(os.path.dirname(__file__), "chromium-profile")
     )
 
     # Setup database once

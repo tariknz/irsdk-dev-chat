@@ -32,7 +32,9 @@ A simple system to scrape iRacing forums, store posts with embeddings, and query
 
 ### Running the Scraper
 
-To scrape the forums and build the database:
+To scrape the forum posts and build the database you need to run the scraper.py file for the main and old forums. Once the browser initially loads, login, and the crawler will begin.
+
+To run the scraper:
 
 - For main forums:
   ```bash

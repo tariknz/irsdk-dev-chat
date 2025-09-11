@@ -2,6 +2,8 @@ import asyncio
 from crawl4ai import *
 from milvus import setup_database, save_post_with_embedding
 
+import os
+
 def hybrid_extract_jforum_posts(html_content):
     """
     Hybrid extraction approach: Use CSS extraction for posts structure,
@@ -98,7 +100,7 @@ async def scrape_jforum():
         verbose=False,
         use_managed_browser=True,
         browser_type="chromium",
-        user_data_dir="/Users/tarik/irsdk-chat/chromium-profile"
+        user_data_dir=os.path.join(os.path.dirname(__file__), "chromium-profile")
     )
 
     # Setup database (will append to existing data)
