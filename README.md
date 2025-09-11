@@ -104,30 +104,6 @@ The system uses a Milvus vector database with a collection named &#39;forum_post
 - text
 - comment_id
 
-## API Key Options
-
-You can provide your OpenAI API key in four ways:
-
-1. **.env file** (recommended):
-   ```bash
-   echo "OPENAI_API_KEY=your-key" > .env
-   ```
-
-2. **Environment variable**:
-   ```bash
-   export OPENAI_API_KEY="your-key"
-   ```
-
-3. **Command line argument**:
-   ```bash
-   python query_system.py --api-key your-key
-   ```
-
-4. **Direct parameter** (in code):
-   ```python
-   query_system = ForumQuerySystem(openai_api_key="your-key")
-   ```
-
 ## Files
 
 - `scraper.py` - Entry point for forum scraping (wrapper for main and JForum scrapers)
