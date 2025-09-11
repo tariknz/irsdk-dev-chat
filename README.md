@@ -1,4 +1,4 @@
-# iRacing Forum Query System
+# iRacing SDK Query Chatbot
 
 A simple system to scrape iRacing forums, store posts with embeddings, and query them using AI.
 
