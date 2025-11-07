@@ -1,6 +1,0 @@
-crawl4ai==0.7.4
-numpy==2.3.3
-openai==1.107.1
-pymilvus==2.6.1
-python-dotenv==1.1.1
-sentence-transformers==5.1.0

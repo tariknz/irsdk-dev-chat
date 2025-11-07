@@ -17,7 +17,7 @@ Demo:
 
 1. **Install dependencies**:
    ```bash
-   pip install -r requirements.txt
+   uv sync
    ```
 
 2. **Set your OpenAI API key** (choose one method):
@@ -111,4 +111,4 @@ The system uses a Milvus vector database with a collection named &#39;forum_post
 - `jforum_scraper.py` - Scraper for JForum sections
 - `milvus.py` - Milvus utility functions for setup and saving posts
 - `query_system.py` - Main query system and CLI interface
-- `requirements.txt` - Python dependencies
+- `pyproject.toml` - Project dependencies and configuration
