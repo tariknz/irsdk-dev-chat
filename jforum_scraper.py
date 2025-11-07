@@ -1,5 +1,5 @@
 import asyncio
-from crawl4ai import *
+from crawl4ai import AsyncWebCrawler, JsonCssExtractionStrategy, CrawlerRunConfig, BrowserConfig
 from milvus import setup_database, save_post_with_embedding
 
 import os
@@ -137,10 +137,10 @@ async def scrape_jforum():
                 continue
     
     # Final summary
-    print(f"\n=== JFORUM SCRAPING COMPLETE ===")
+    print("\n=== JFORUM SCRAPING COMPLETE ===")
     print(f"Total posts extracted: {total_posts}")
     print(f"Total posts saved: {total_saved}")
-    print(f"Pages processed: 151")
+    print(f"Pages processed: {i + 1}")
     
 
 if __name__ == "__main__":

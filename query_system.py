@@ -4,13 +4,13 @@ from openai import OpenAI
 import os
 from typing import List, Dict, Any
 from dotenv import load_dotenv
-from milvus import DB_PATH, COLLECTION_NAME, model, dim
+from milvus import DB_PATH, COLLECTION_NAME, model
 from pymilvus import MilvusClient
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 class ForumQuerySystem:
-    def __init__(self, db_path: str = DB_PATH, openai_api_key: str = None):
+    def __init__(self, db_path: str = DB_PATH, openai_api_key: str | None = None):
         """
         Initialize the forum query system with database and OpenAI client.
         
@@ -49,7 +49,7 @@ class ForumQuerySystem:
             List of dictionaries containing post metadata and similarity scores
         """
         # Generate embedding for the query
-        query_embedding = model.encode(query).astype(np.float32).tolist()
+        query_embedding = model.encode(query).tolist()
         
         res = self.client.search(
             collection_name=COLLECTION_NAME,
@@ -125,7 +125,7 @@ Please provide a helpful answer based on the forum posts above. If you reference
         except Exception as e:
             return f"Error getting response from OpenAI: {e}"
     
-    def get_post_by_id(self, post_id: int) -> Dict[str, Any]:
+    def get_post_by_id(self, post_id: int) -> Dict[str, Any] | None:
         """Get a specific post by its ID."""
         res = self.client.query(
             collection_name=COLLECTION_NAME,
@@ -160,7 +160,7 @@ Please provide a helpful answer based on the forum posts above. If you reference
                 from datetime import datetime
                 dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
                 return dt.strftime("%Y-%m-%d %H:%M")
-            except:
+            except Exception:
                 return date_str
         
         return date_str

@@ -1,6 +1,6 @@
 import asyncio
 import json
-from crawl4ai import *
+from crawl4ai import AsyncWebCrawler, JsonCssExtractionStrategy, CrawlerRunConfig, BrowserConfig
 from milvus import setup_database, save_post_with_embedding
 
 import os
@@ -106,10 +106,10 @@ async def main():
                 continue
     
     # Final summary
-    print(f"\n=== SCRAPING COMPLETE ===")
+    print("\n=== SCRAPING COMPLETE ===")
     print(f"Total posts extracted: {total_posts}")
     print(f"Total posts saved: {total_saved}")
-    print(f"Pages processed: 64")
+    print(f"Pages processed: {page_num}")
     
     # No need to close Milvus client explicitly
 
